@@ -230,20 +230,22 @@ The project is structured according to Clean Architecture, separating concerns i
 - **External**: Implementations for infrastructure (APIs, DB, etc.)
 - **Presentation**: Next.js pages/components (UI layer)
 
-### Onion Architecture Diagram
+### Clean Architecture Diagram
 
 ```mermaid
-graph TD
-    A[Presentation (Next.js)] --> B[Adapters]
-    B --> C[Use Cases]
-    C --> D[Entities]
-    B --> E[External]
-    style D fill:#f9f,stroke:#333,stroke-width:2px
-    style C fill:#bbf,stroke:#333,stroke-width:2px
-    style B fill:#bfb,stroke:#333,stroke-width:2px
-    style A fill:#ffd,stroke:#333,stroke-width:2px
-    style E fill:#eee,stroke:#333,stroke-width:2px
+flowchart TD
+    UI["Presentation Layer: Next.js"] --> AD["Adapters"]
+    AD --> UC["Use Cases"]
+    UC --> EN["Entities"]
+    AD --> EX["External"]
+    style EN fill:#f9f,stroke:#333,stroke-width:2px
+    style UC fill:#bbf,stroke:#333,stroke-width:2px
+    style AD fill:#bfb,stroke:#333,stroke-width:2px
+    style UI fill:#ffd,stroke:#333,stroke-width:2px
+    style EX fill:#eee,stroke:#333,stroke-width:2px
+
 ```
+
 
 ## Getting Started
 
