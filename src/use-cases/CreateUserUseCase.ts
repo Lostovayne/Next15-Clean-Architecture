@@ -1,4 +1,5 @@
 import type { UserRepository } from "../adapters/UserRepository";
+import { handleZodError } from "../common/errorHandler";
 import type { User } from "../entities/User";
 
 import * as z from "zod/v4";
@@ -14,12 +15,17 @@ export class CreateUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(input: CreateUserInput): Promise<void> {
-    const validInput = CreateUserInputSchema.parse(input);
-    const user: User = {
-      id: crypto.randomUUID(), // Assuming the ID is generated here
-      name: validInput.name,
-      email: validInput.email,
-    };
-    await this.userRepository.create(user);
+    try {
+      const validInput = CreateUserInputSchema.parse(input);
+
+      const user: User = {
+        id: crypto.randomUUID(), // Assuming the ID is generated here
+        name: validInput.name,
+        email: validInput.email,
+      };
+      await this.userRepository.create(user);
+    } catch (error) {
+      throw new Error(handleZodError(error));
+    }
   }
 }
