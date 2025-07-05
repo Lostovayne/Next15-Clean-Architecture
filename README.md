@@ -34,22 +34,6 @@ We welcome PRs that:
 ## License
 
 MIT
-## Diagrams
-
-### Clean Architecture Onion Diagram
-
-```mermaid
-flowchart TD
-    UI[Presentation Layer (Next.js)] --> AD[Adapters]
-    AD --> UC[Use Cases]
-    UC --> EN[Entities]
-    AD --> EX[External]
-    style EN fill:#f9f,stroke:#333,stroke-width:2px
-    style UC fill:#bbf,stroke:#333,stroke-width:2px
-    style AD fill:#bfb,stroke:#333,stroke-width:2px
-    style UI fill:#ffd,stroke:#333,stroke-width:2px
-    style EX fill:#eee,stroke:#333,stroke-width:2px
-```
 
 ### Use Case Flow Example
 
