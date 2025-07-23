@@ -1,7 +1,8 @@
 import type { UserRepository } from "@/src/adapters/UserRepository";
-import type { User } from "@/src/entities/User";
 import { ApplicationError, ErrorType } from "@/src/common/errorHandler";
-import { GetUserUseCase } from "@/src/use-cases/GetUserUseCase";
+import type { User } from "@/src/entities/User";
+
+import { GetUsersUseCase } from "@/src/use-cases/GetUserUseCase";
 import { describe, expect, it, vi } from "vitest";
 
 describe("GetUserUseCase", () => {
@@ -17,7 +18,7 @@ describe("GetUserUseCase", () => {
       create: vi.fn(),
     };
 
-    const useCase = new GetUserUseCase(mockRepository);
+    const useCase = new GetUsersUseCase(mockRepository);
     const result = await useCase.execute();
 
     expect(mockRepository.getAll).toHaveBeenCalled();
@@ -31,7 +32,7 @@ describe("GetUserUseCase", () => {
       getAll: vi.fn(async () => invalidUsers),
       create: vi.fn(),
     };
-    const useCase = new GetUserUseCase(mockRepository);
+    const useCase = new GetUsersUseCase(mockRepository);
 
     try {
       await useCase.execute();
@@ -40,7 +41,9 @@ describe("GetUserUseCase", () => {
       expect(error).toBeInstanceOf(ApplicationError);
       expect((error as ApplicationError).type).toBe(ErrorType.VALIDATION_ERROR);
       expect((error as ApplicationError).code).toBe("ZOD_VALIDATION_FAILED");
-      expect((error as ApplicationError).message).toMatch(/Invalid email/);
+      expect((error as ApplicationError).message).toMatch(
+        'Validation error: INVALID_EMAIL_FORMAT at "email"'
+      );
     }
   });
 
@@ -51,7 +54,7 @@ describe("GetUserUseCase", () => {
       }),
       create: vi.fn(),
     };
-    const useCase = new GetUserUseCase(mockRepository);
+    const useCase = new GetUsersUseCase(mockRepository);
 
     try {
       await useCase.execute();
