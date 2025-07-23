@@ -1,5 +1,6 @@
 import type { UserRepository } from "@/src/adapters/UserRepository";
 import type { User } from "@/src/entities/User";
+import { ApplicationError, ErrorType } from "@/src/common/errorHandler";
 import { GetUserUseCase } from "@/src/use-cases/GetUserUseCase";
 import { describe, expect, it, vi } from "vitest";
 
@@ -24,7 +25,7 @@ describe("GetUserUseCase", () => {
     expect(result[0].email).toBe("alice@example.com");
   });
 
-  it("should throw a formatted error for invalid data", async () => {
+  it("should throw an ApplicationError for invalid data", async () => {
     const invalidUsers = [{ id: "1", name: "Alice", email: "invalid-email" }];
     const mockRepository: UserRepository = {
       getAll: vi.fn(async () => invalidUsers),
@@ -32,6 +33,33 @@ describe("GetUserUseCase", () => {
     };
     const useCase = new GetUserUseCase(mockRepository);
 
-    await expect(useCase.execute()).rejects.toThrow(/Validation error: Invalid email at \"email"/);
+    try {
+      await useCase.execute();
+      expect.fail("Should have thrown an error");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApplicationError);
+      expect((error as ApplicationError).type).toBe(ErrorType.VALIDATION_ERROR);
+      expect((error as ApplicationError).code).toBe("ZOD_VALIDATION_FAILED");
+      expect((error as ApplicationError).message).toMatch(/Invalid email/);
+    }
+  });
+
+  it("should handle repository errors gracefully", async () => {
+    const mockRepository: UserRepository = {
+      getAll: vi.fn(async () => {
+        throw new Error("Database connection failed");
+      }),
+      create: vi.fn(),
+    };
+    const useCase = new GetUserUseCase(mockRepository);
+
+    try {
+      await useCase.execute();
+      expect.fail("Should have thrown an error");
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApplicationError);
+      expect((error as ApplicationError).type).toBe(ErrorType.UNKNOWN_ERROR);
+      expect((error as ApplicationError).message).toBe("Database connection failed");
+    }
   });
 });

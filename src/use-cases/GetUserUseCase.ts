@@ -1,6 +1,6 @@
 import * as z from "zod/v4";
 import { UserRepository } from "../adapters/UserRepository";
-import { handleZodError } from "../common/errorHandler";
+import { handleError, logError } from "../common/errorHandler";
 import { User } from "../entities/User";
 
 const UserSchema = z.object({
@@ -13,11 +13,15 @@ export class GetUserUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(): Promise<User[]> {
+    const traceId = crypto.randomUUID();
+
     try {
       const users = await this.userRepository.getAll();
       return users.map((user) => UserSchema.parse(user));
     } catch (error) {
-      throw new Error(handleZodError(error));
+      const appError = handleError(error, "GetUserUseCase.execute", traceId);
+      logError(appError, "Failed to get users");
+      throw appError;
     }
   }
 }
