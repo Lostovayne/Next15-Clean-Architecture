@@ -122,6 +122,266 @@ export class CreateUserUseCase {
 }
 ```
 
+### En Fetch a APIs Externas
+
+```typescript
+export class UserApiService {
+  private readonly baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  async fetchUsers(): Promise<User[]> {
+    const traceId = crypto.randomUUID();
+
+    try {
+      const response = await fetch(`${this.baseUrl}/users`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // Timeout para evitar requests colgados
+        signal: AbortSignal.timeout(10000), // 10 segundos
+      });
+
+      // Error HTTP específico
+      if (!response.ok) {
+        switch (response.status) {
+          case 400:
+            throw createError.validation(
+              "Invalid request parameters",
+              { status: response.status, url: response.url },
+              traceId
+            );
+          case 401:
+            throw createError.unauthorized("Authentication failed - invalid API key", traceId);
+          case 403:
+            throw createError.forbidden("Access denied to users endpoint", traceId);
+          case 404:
+            throw createError.notFound("Users endpoint", traceId);
+          case 429:
+            throw createError.rateLimit("Rate limit exceeded for external API", traceId);
+          case 500:
+          case 502:
+          case 503:
+          case 504:
+            throw createError.network(
+              "External API server error",
+              {
+                status: response.status,
+                statusText: response.statusText,
+                url: response.url,
+              },
+              traceId
+            );
+          default:
+            throw createError.network(
+              `Unexpected HTTP status: ${response.status}`,
+              { status: response.status, url: response.url },
+              traceId
+            );
+        }
+      }
+
+      // Parsear respuesta JSON
+      const data = await response.json();
+
+      // Validar estructura de datos
+      if (!Array.isArray(data)) {
+        throw createError.validation(
+          "Invalid response format - expected array",
+          { receivedType: typeof data, url: response.url },
+          traceId
+        );
+      }
+
+      return data;
+    } catch (error) {
+      // Errores de red (sin conexión, timeout, DNS, etc.)
+      if (error instanceof TypeError) {
+        const networkError = createError.network(
+          "Network connection failed",
+          {
+            originalError: error.message,
+            url: `${this.baseUrl}/users`,
+            errorType: "NetworkError",
+          },
+          traceId
+        );
+        logError(networkError, "UserApiService.fetchUsers - Network error");
+        throw networkError;
+      }
+
+      // Errores de timeout
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        const timeoutError = createError.network(
+          "Request timeout - external API took too long to respond",
+          {
+            url: `${this.baseUrl}/users`,
+            timeout: "10000ms",
+            errorType: "TimeoutError",
+          },
+          traceId
+        );
+        logError(timeoutError, "UserApiService.fetchUsers - Timeout");
+        throw timeoutError;
+      }
+
+      // Errores de AbortController
+      if (error instanceof DOMException && error.name === "AbortError") {
+        const abortError = createError.network(
+          "Request was aborted",
+          {
+            url: `${this.baseUrl}/users`,
+            errorType: "AbortError",
+          },
+          traceId
+        );
+        logError(abortError, "UserApiService.fetchUsers - Request aborted");
+        throw abortError;
+      }
+
+      // Errores de parsing JSON
+      if (error instanceof SyntaxError) {
+        const parseError = createError.validation(
+          "Invalid JSON response from external API",
+          {
+            originalError: error.message,
+            url: `${this.baseUrl}/users`,
+            errorType: "JSONParseError",
+          },
+          traceId
+        );
+        logError(parseError, "UserApiService.fetchUsers - JSON parse error");
+        throw parseError;
+      }
+
+      // Si ya es ApplicationError, la relanzamos
+      if (error instanceof ApplicationError) {
+        logError(error, "UserApiService.fetchUsers - Application error");
+        throw error;
+      }
+
+      // Cualquier otro error desconocido
+      const unknownError = handleError(error, "UserApiService.fetchUsers", traceId);
+      logError(unknownError, "UserApiService.fetchUsers - Unknown error");
+      throw unknownError;
+    }
+  }
+
+  async createUser(userData: CreateUserInput): Promise<User> {
+    const traceId = crypto.randomUUID();
+
+    try {
+      const response = await fetch(`${this.baseUrl}/users`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(userData),
+        signal: AbortSignal.timeout(15000), // 15 segundos para POST
+      });
+
+      if (!response.ok) {
+        // Intentar obtener detalles del error del servidor
+        let errorDetails: any = null;
+        try {
+          errorDetails = await response.json();
+        } catch {
+          // Si no se puede parsear, usar información básica
+          errorDetails = {
+            status: response.status,
+            statusText: response.statusText,
+          };
+        }
+
+        switch (response.status) {
+          case 400:
+            throw createError.validation(
+              errorDetails?.message || "Invalid user data",
+              {
+                ...errorDetails,
+                submittedData: userData,
+                url: response.url,
+              },
+              traceId
+            );
+          case 409:
+            throw createError.conflict(
+              errorDetails?.message || "User already exists",
+              {
+                email: userData.email,
+                conflictField: errorDetails?.field || "email",
+                url: response.url,
+              },
+              traceId
+            );
+          case 422:
+            throw createError.validation(
+              errorDetails?.message || "Validation failed",
+              {
+                validationErrors: errorDetails?.errors || [],
+                submittedData: userData,
+                url: response.url,
+              },
+              traceId
+            );
+          default:
+            throw createError.network(
+              `API error: ${response.status}`,
+              {
+                ...errorDetails,
+                status: response.status,
+                url: response.url,
+              },
+              traceId
+            );
+        }
+      }
+
+      const createdUser = await response.json();
+
+      // Validación básica del usuario creado
+      if (!createdUser.id || !createdUser.email) {
+        throw createError.validation(
+          "Invalid user object returned from API",
+          { receivedUser: createdUser, url: response.url },
+          traceId
+        );
+      }
+
+      return createdUser;
+    } catch (error) {
+      // Misma lógica de manejo de errores que en fetchUsers
+      if (error instanceof TypeError) {
+        const networkError = createError.network(
+          "Failed to create user - network error",
+          {
+            originalError: error.message,
+            userData: userData,
+            url: `${this.baseUrl}/users`,
+          },
+          traceId
+        );
+        logError(networkError, "UserApiService.createUser - Network error");
+        throw networkError;
+      }
+
+      if (error instanceof ApplicationError) {
+        logError(error, "UserApiService.createUser - Application error");
+        throw error;
+      }
+
+      const unknownError = handleError(error, "UserApiService.createUser", traceId);
+      logError(unknownError, "UserApiService.createUser - Unknown error");
+      throw unknownError;
+    }
+  }
+}
+```
+
 ### En API Routes
 
 ```typescript

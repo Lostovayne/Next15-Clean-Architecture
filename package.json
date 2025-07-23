@@ -10,26 +10,26 @@
     "test": "vitest"
   },
   "dependencies": {
-    "next": "15.3.5",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "zod": "^3.25.74",
-    "zod-validation-error": "^4.0.0-beta.1"
+    "next": "^15.4.2-canary.14",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zod": "^4.0.5",
+    "zod-validation-error": "^4.0.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@eslint/eslintrc": "^3.3.1",
+    "@tailwindcss/postcss": "^4.1.11",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.5",
+    "@types/node": "^24.1.0",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.31.0",
+    "eslint-config-next": "15.4.3",
     "jsdom": "^26.1.0",
-    "tailwindcss": "^4",
-    "typescript": "^5",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   }

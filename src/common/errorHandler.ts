@@ -218,6 +218,13 @@ export const createError = {
       undefined,
       traceId
     ),
+
+  unknown: (message = "An unknown error occurred", traceId?: string) =>
+    new ApplicationError(ErrorType.UNKNOWN_ERROR, message, "UNKNOWN_ERROR", undefined, traceId),
+
+  // Un error al hacer Fetch
+  fetchError: (message: string, details?: Record<string, unknown>, traceId?: string) =>
+    new ApplicationError(ErrorType.NETWORK_ERROR, message, "FETCH_ERROR", details, traceId),
 };
 
 // Función para logging de errores (placeholder para futura implementación)
