@@ -9,7 +9,7 @@ const UserSchema = z.object({
   email: z.email({ message: "INVALID_EMAIL_FORMAT" }),
 });
 
-export class GetUserUseCase {
+export class GetUsersUseCase {
   constructor(private userRepository: UserRepository) {}
 
   async execute(): Promise<User[]> {

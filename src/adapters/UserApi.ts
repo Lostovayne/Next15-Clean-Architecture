@@ -26,7 +26,6 @@ export class UserApi implements UserRepository {
   async getAll(): Promise<User[]> {
     try {
       const response = await fetch(API_URL, { next: { revalidate: 3600, tags: ["users"] } });
-
       if (!response.ok) {
         throw createError.fetchError(
           "Failed to fetch users",
